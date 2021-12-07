@@ -36,3 +36,17 @@ model1 <- lm(PriceinGermany ~ Acceleration + TopSpeed + Range + Efficiency + Fas
 # Create second model, with Drive as categorical data
 model2 <- lm(PriceinGermany ~ Acceleration + TopSpeed + Range + Efficiency + FastChargeSpeed +
                  BatterySize + Drive, data = ev, na.action = na.omit)
+
+# Transform numeric predictors
+summary(powerTransform(cbind(ev$Acceleration, ev$TopSpeed, ev$Range, ev$Efficiency,
+                             ev$FastChargeSpeed, ev$BatterySize)))
+
+# Create model with transformed Data
+model3 <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+                 log(Efficiency) + log(FastChargeSpeed) + log(BatterySize), data = ev)
+
+# Create model with transformed Data, without FastChargeSpeed
+model4 <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+                 log(Efficiency) + log(BatterySize), data = ev)
+
+# Note: Lightyear one seems to be a pretty bad strong outlier
