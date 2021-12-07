@@ -11,7 +11,7 @@ ev <- read_xlsx('Electric Vehicle Data/Cheapestelectriccars-EVDatabase.xlsx',
                 sheet = 'Cheapestelectriccars- UTF8')
 
 # Convert Character Vectors into useable numeric vectors
-ev$BatterySize <- as.numeric(gsub(".*([0-9]{2,3}[.]*[0-9]*) kWh", "\\1", ev$Subtitle))
+ev$BatterySize <- as.numeric(gsub(".*([0-9]{2,3}[.]*[0-9]*) kWh", "\\1", ev$Subtitle)) #STILL BUGGED
 libra_strip <- gsub(".([0-9]{2,3},[0-9]{3})", "\\1", ev$PriceinUK) # strip the libra symbol
 ev$PriceinUK <- as.numeric(gsub(",", "", libra_strip))
 ev$Acceleration <- as.numeric(gsub(" sec", "", ev$Acceleration))
