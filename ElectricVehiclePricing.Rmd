@@ -1,0 +1,15 @@
+---
+title: "Electric Vehicle Pricing"
+author: "Eric Wilson; Min Thiha Myo; Kevin Maldonado"
+date: "12/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(MASS)
+library(car)
+```
+
