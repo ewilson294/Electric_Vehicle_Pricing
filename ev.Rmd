@@ -1,0 +1,325 @@
+---
+title: "EV"
+author: "Min Thiha Myo"
+date: "12/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo=FALSE)
+options(scipen=999)  # turn-off scientific notation like 1e+48
+
+# Clear environment and memory
+rm(list = ls(all.names = TRUE)) #will clear all objects includes hidden objects.
+gc() #free up memory and report the memory usage.
+
+library(tidyverse)
+library(reshape2)
+library(ggiraph)
+
+library(hier.part) #amount of variance explained by each predictor
+library(psych) #Generating more informative scatterplot matrix
+library(MASS) #Use box cox function
+library(lmtest) # Test for Autocorrelated/non-independence of Errors
+library(car) #variance around the regression line is the same for all values of the predictor variable (X)
+library(leaps) #u
+```
+
+Ingest
+
+```{r }
+df <- read.csv('ev.csv', header = TRUE, stringsAsFactors = FALSE)
+
+```
+
+Regex to Format
+
+```{r }
+
+colnames(df) <- c("Name", "Usable_Battery_kWh", "Acceleration_sec", "TopSpeed_kmh", "Range_km", "Efficiency_Whkm", "FastChargeSpeed_kmh", "Drive", "NumberOfSeats", "Price", "PriceInUK_GBP")
+
+df$`Usable_Battery_kWh` <- as.numeric(gsub("[^0-9.-]", "", df$`Usable_Battery_kWh`))
+df$`Acceleration_sec` <- as.numeric(gsub("[^0-9.-]", "", df$`Acceleration_sec`))
+df$`TopSpeed_kmh` <- as.numeric(gsub("[^0-9.-]", "", df$`TopSpeed_kmh`))
+df$`Range_km` <- as.numeric(gsub("[^0-9.-]", "", df$`Range_km`))
+df$`Efficiency_Whkm` <- as.numeric(gsub("[^0-9.-]", "", df$`Efficiency_Whkm`))
+df$`FastChargeSpeed_kmh` <- as.numeric(gsub("[^0-9.-]", "", df$`FastChargeSpeed_kmh`))
+df$`Price` <- as.numeric(gsub("[^0-9.-]", "", df$`Price`))
+df$`PriceInUK_GBP` <- as.numeric(gsub("[^0-9.-]", "", df$`PriceInUK_GBP`))
+
+```
+
+
+Missing Values
+
+```{r }
+
+df <- df[rowSums(is.na(df[,10:11]))!=2,] #weed out the rows with missing values in both EUR and GBP
+
+df <- df[,-11] # There are 41 NAs in British pounds, so we'll remove that
+df <- na.omit(df) # remove all other NAs
+
+```
+
+Exploratory Analysis
+
+```{r }
+
+ggplot(df, aes(x = Price)) +    
+  geom_histogram(alpha = 0.8,fill = "#fcb9c6") +
+  geom_vline(aes(xintercept = mean(Price)),col='indianred1',size=1)+ #Vertical Line for Mean
+  geom_text(aes(x=mean(Price) + 1250, label="Mean", y=10), colour="indianred1", angle=90) +
+  geom_vline(aes(xintercept = median(Price)),col='steelblue1',size=1)+ #Vertical Line for Median
+  geom_text(aes(x=median(Price) + 1250, label="Median", y=10), colour="steelblue1", angle=90) +
+  labs(x= 'Price',y = 'Count', title = paste("Distribution of EV Prices")) +
+  theme_bw()
+
+```
+
+
+
+```{r }
+v1 <- ggplot(df, aes(x=Acceleration_sec,y=Price))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=Acceleration_sec,y=Price),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Acceleration', 
+       y = 'Price', 
+       title = 'Acceleration and Price')
+
+v2 <- ggplot(df, aes(x=TopSpeed_kmh,y=Price))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=TopSpeed_kmh,y=Price),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Top Speed', 
+       y = 'Price', 
+       title = 'Top Speed and Price')
+
+
+v3 <- ggplot(df, aes(x=Range_km,y=Price))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=Range_km,y=Price),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Raange', 
+       y = 'Price', 
+       title = 'Range and Price')
+
+
+v4 <- ggplot(df, aes(x=Efficiency_Whkm,y=Price))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=Efficiency_Whkm,y=Price),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Efficiency', 
+       y = 'Price', 
+       title = 'Efficiency and Price')
+
+
+library(patchwork)
+
+patch = v1 + v2 + v3 + v4 + plot_layout(ncol=2, nrow=2) #patching all graphs in one frame
+patch
+
+
+```
+
+Correlation
+
+```{r }
+library(corrplot)
+
+corr <- cor(df[,-c(1,8)])
+corrplot.mixed(corr)
+
+```
+
+
+
+```{r }
+
+x <- df[,-c(1,8)]
+
+m1 <- lm(Price ~ TopSpeed_kmh,data = x)
+m2 <- lm(Price ~ TopSpeed_kmh + Range_km + Acceleration_sec ,data = x)
+m3 <- lm(Price ~ .,data = x)
+
+
+summary(m1)$r.sq
+summary(m2)$r.sq
+summary(m3)$r.sq
+
+```
+
+
+
+```{r }
+summary(m3)
+
+```
+
+
+
+```{r }
+par(mfrow = c(2,2))
+plot(m2)
+par(mfrow = c(2,2))
+plot(m3)
+
+```
+
+
+
+```{r }
+
+trans_m1 <- lm(log(Price) ~ .,data = x)
+summary(trans_m1)
+par(mfrow = c(2,2))
+plot(trans_m1)
+
+
+```
+
+
+
+Using Caret
+
+```{r }
+
+library(caret)
+
+formula = Price ~ .
+
+fitControl <- trainControl(method="cv",number = 10) #Hyper Parameters
+
+lrmodel = train(formula, data = x,
+                   method = "lm",trControl = fitControl,metric="RMSE") 
+
+importance = varImp(lrmodel)
+PlotImportance = function(importance)
+{
+  varImportance <- data.frame(Variables = row.names(importance[[1]]), 
+                              Importance = round(importance[[1]]$Overall,2))
+  
+  # Create a rank variable based on importance
+  rankImportance <- varImportance %>%
+    mutate(Rank = paste0('#',dense_rank(desc(Importance))))
+  
+  rankImportancefull = rankImportance
+  
+  ggplot(rankImportance, aes(x = reorder(Variables, Importance), 
+                             y = Importance)) +
+    geom_bar(stat='identity',colour="white", fill = "#2185DC") +
+    geom_text(aes(x = Variables, y = 1, label = Rank),
+              hjust=0, vjust=.5, size = 4, colour = 'black',
+              fontface = 'bold') +
+    labs(x = 'Variables', title = 'Relative Variable Importance') +
+    coord_flip() + 
+    theme_bw()
+  
+  
+}
+
+PlotImportance(importance)
+
+```
+
+
+
+```{r }
+
+prediction <- df
+
+prediction$pred <- predict(lrmodel, df)
+
+comparison <- prediction %>% dplyr::select(Price, pred)
+
+cor(prediction$pred, prediction$Price)
+
+ggplot(prediction, aes(x=pred,y=Price))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=pred,y=Price),method="lm", color="red")+
+  theme_bw()+
+  theme(axis.title = element_text(size=16),axis.text = element_text(size=14))+
+  xlab("Predicted Price")+
+  ylab("Actual Price")
+
+
+```
+
+XGBoost
+
+```{r }
+
+xgbGrid <- expand.grid(nrounds = 500,
+                       max_depth = 4,
+                      eta = .05,
+                       gamma = 0,
+                       colsample_bytree = .5,
+                       min_child_weight = 1,
+                       subsample = 1)
+
+set.seed(13)
+
+xgbmodel = train(formula, data = x,
+                   method = "xgbTree",trControl = fitControl,
+                   tuneGrid = xgbGrid,na.action = na.pass,metric="RMSE")
+
+importance3 = varImp(xgbmodel)
+
+PlotImportance(importance3)
+
+xgbmodel
+
+``` 
+
+
+
+```{r }
+
+prediction <- df
+
+prediction$pred <- predict(xgbmodel, df)
+
+comparison <- prediction %>% dplyr::select(Price, pred)
+
+cor(prediction$pred, prediction$Price)
+
+ggplot(prediction, aes(x=pred,y=Price))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=pred,y=Price),method="lm", color="red")+
+  theme_bw()+
+  theme(axis.title = element_text(size=16),axis.text = element_text(size=14))+
+  xlab("Predicted Price")+
+  ylab("Actual Price")
+
+
+```
+
+
+```{r }
+
+
+
+```
+
+
+
+```{r }
+
+
+
+```
+
+
+
+```{r }
+
+
+
+```
