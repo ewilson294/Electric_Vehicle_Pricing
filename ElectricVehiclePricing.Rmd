@@ -12,6 +12,21 @@ library(readxl)
 library(MASS)
 library(car)
 ```
+Introduction
+
+Electric Vehicles are rising in popularity amongst consumers in todays day and age. With climate change playing a big factor,
+several nations have made a consorted effort in investing in 'green technologies' which include electric vehicles. The development
+and improvement of battery technology has made the electric vehicle a viable and perhaps a more preferable choice for consumers.
+Some of the advantages of electric vehicles include saving money on gas, environmentally friendly, low maintenance cost. Local 
+governments are also offering incentives to buy an electric vehicle. As there is with any new technology, there are challenges 
+that electric vehicles face. Charging station scarcity and battery range are 2 big hurdles that owners will have to face. Despite
+the challenges that owners and manufactures might have to overcome, the rise of ownership of electric vehicles is undeniable and
+will only increase heading into the future. 
+
+Our project will take data from various electric vehicles that are available in the market and from that data we will perform a regression analysis
+to predict the price of electric vehicles based on different variables such as battery size, acceleration, range and efficiency. 
+
+
 
 ```{r}
 ev <- read_xlsx('Electric Vehicle Data/Cheapestelectriccars-EVDatabase.xlsx', 
