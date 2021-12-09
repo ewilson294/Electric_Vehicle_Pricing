@@ -6,6 +6,7 @@ library(tidyverse)
 library(readxl)
 library(MASS)
 library(car)
+library(leaps)
 
 ev <- read_xlsx('Electric Vehicle Data/Cheapestelectriccars-EVDatabase.xlsx', 
                 sheet = 'Cheapestelectriccars- UTF8')
@@ -25,7 +26,7 @@ ev$PriceinGermany <- as.numeric(ev$PriceinGermany)
 # Limit ev to complete records, German Prices
 ev <- ev[complete.cases(cbind(ev$FastChargeSpeed, ev$PriceinGermany)),]
 
-# Create graph of pairs+
+# Create graph of pairs
 pairs(~ PriceinGermany + PriceinUK + Acceleration + TopSpeed + Range + Efficiency +
           FastChargeSpeed + BatterySize, data = ev)
 
@@ -50,3 +51,8 @@ model4 <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
                  log(Efficiency) + log(BatterySize), data = ev)
 
 # Note: Lightyear one seems to be a pretty bad strong outlier
+
+# Perform Best Subset Selection on Transformed Data
+model3_subsets <- regsubsets(x = PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
+                             + log(Range) +log(Efficiency) + log(FastChargeSpeed)
+                             + log(BatterySize), data = ev)

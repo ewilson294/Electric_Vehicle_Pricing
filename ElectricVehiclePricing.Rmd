@@ -29,6 +29,7 @@ library(MASS)
 library(car)
 library(corrplot)
 library(patchwork)
+library(leaps)
 ```
 
 # Data Preparation
@@ -177,4 +178,33 @@ patch = v1 + v2 + v3 + v4 + plot_layout(ncol=2, nrow=2) #patching all graphs in 
 patch
 ```
 
+## Data Transformation
+```{r}
+# Transform numeric predictors
+summary(powerTransform(cbind(ev$Acceleration, ev$TopSpeed, ev$Range, ev$Efficiency,
+                             ev$FastChargeSpeed, ev$BatterySize)))
+```
 
+
+```{r}
+# Create model with transformed Data
+transformed_model <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+                 log(Efficiency) + log(FastChargeSpeed) + log(BatterySize), data = ev)
+summary(transformed_model)
+```
+
+## Feature Selection
+```{r}
+# Perform Best Subset Selection on Transformed Data
+transformed_model_subsets <- regsubsets(x = PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
+                             + log(Range) +log(Efficiency) + log(FastChargeSpeed)
+                             + log(BatterySize), data = ev)
+summary(transformed_model_subsets)
+```
+
+## Best Subset Model
+```{r}
+# Create model with transformed Data, without FastChargeSpeed
+subset_model <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+                 log(Efficiency) + log(BatterySize), data = ev)
+```
