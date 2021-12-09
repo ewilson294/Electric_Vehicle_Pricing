@@ -207,4 +207,9 @@ summary(transformed_model_subsets)
 # Create model with transformed Data, without FastChargeSpeed
 subset_model <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
                  log(Efficiency) + log(BatterySize), data = ev)
+summary(subset_model)
+plot(subset_model)
 ```
+
+All of our predictors and the model as a whole are statistically significant, however the model is still not valid for making predictions.
+Model variance remains non-constant.
