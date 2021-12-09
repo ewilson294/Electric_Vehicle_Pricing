@@ -1,0 +1,329 @@
+---
+title: "Electric Vehicle Pricing"
+author: "Eric Wilson; Min Thiha Myo; Kevin Maldonado"
+date: "12/7/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Introduction
+
+Electric Vehicles are rising in popularity amongst consumers in todays day and age. With climate change playing a big factor,
+several nations have made a consorted effort in investing in 'green technologies' which include electric vehicles. The development
+and improvement of battery technology has made the electric vehicle a viable and perhaps a more preferable choice for consumers.
+Some of the advantages of electric vehicles include saving money on gas, environmentally friendly, low maintenance cost. Local 
+governments are also offering incentives to buy an electric vehicle. As there is with any new technology, there are challenges 
+that electric vehicles face. Charging station scarcity and battery range are 2 big hurdles that owners will have to face. Despite
+the challenges that owners and manufactures might have to overcome, the rise of ownership of electric vehicles is undeniable and
+will only increase heading into the future. 
+
+Our project will take data from various electric vehicles that are available in the market and from that data we will perform a regression analysis
+to predict the price of electric vehicles based on different variables such as battery size, acceleration, range and efficiency. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+library(tidyverse)
+library(readxl)
+library(MASS)
+library(car)
+library(corrplot)
+library(patchwork)
+```
+
+# Data Preparation
+
+## Data Source
+Our data can be found through this link: https://www.kaggle.com/kkhandekar/cheapest-electric-cars
+
+##Loading Dataset
+Our EV dataset contains 180 observations (rows) and 12 variables (columns). 
+```{r}
+ev <- read_xlsx('Electric Vehicle Data/Cheapestelectriccars-EVDatabase.xlsx',
+                sheet = 'Cheapestelectriccars- UTF8')
+
+```
+
+## Data Cleanup
+We now go into our data and start our clean up process. We start by converting several variables to numeric. Battery Size, PriceinUK, 
+Acceleration, Top Speed, Range, Efficiency, Fast charge speed, and Price in Germany all get converted to numeric. Along with this conversion,
+we perform some regex (regular expression) to our data so that we can perform a successful conversion to numeric. Our 'Drive' variable will 
+be converted to a factor. Note that since our data set comes from european sources the units will be in kilometers.
+```{r}
+# Convert Character Vectors into useable numeric vectors
+ev$BatterySize <- as.numeric(gsub(".* ([0-9]{2,3}[.]*[0-9]*) kWh", "\\1", ev$Subtitle))
+libra_strip <- gsub(".([0-9]{2,3},[0-9]{3})", "\\1", ev$PriceinUK) # strip the libra symbol
+ev$PriceinUK <- as.numeric(gsub(",", "", libra_strip))
+ev$Acceleration <- as.numeric(gsub(" sec", "", ev$Acceleration))
+ev$TopSpeed <- as.numeric(gsub(" km/h", "", ev$TopSpeed))
+ev$Range <- as.numeric(gsub(" km", "", ev$Range))
+ev$Efficiency <- as.numeric(gsub(" Wh/km", "", ev$Efficiency))
+ev$FastChargeSpeed <- as.numeric(gsub(" km/h", "", ev$FastChargeSpeed))
+ev$Drive <- as.factor(ev$Drive)
+ev$PriceinGermany <- as.numeric(ev$PriceinGermany)
+ev <- ev[,-2] #removing subtitle column
+```
+
+We then check for any missing values in our data set and remove them.
+
+```{r}
+# Limit ev to complete records, German Prices
+ev <- ev[complete.cases(cbind(ev$FastChargeSpeed, ev$PriceinGermany)),]
+attach(ev)
+```
+
+# Exploratory Data Analysis
+Let's to a look at our data set now that we have removed missing values and cleaned it up.
+```{r}
+head(ev)
+```
+We have data available for EV prices in Germany (in euros) and prices in the UK (pound sterling ), but for the purpose of this report
+we will only be using prices in Germany as our response variable since it provides more data points.
+
+## Summary of Variables
+```{r}
+#summary of Battery Size
+summary(BatterySize)
+```
+```{r}
+#summary of EV prices in Germany
+summary(PriceinGermany)
+```
+
+```{r}
+#summary of Top speed
+summary(TopSpeed)
+```
+
+```{r}
+#summary of Battery Range
+summary(Range)
+```
+
+```{r}
+#summary of FastChargeSpeed
+summary(ev[,c(2,3,4,5,6,11)])
+```
+
+The electric vehicles in our data set range in price from €20,490 to €215,000 with an average price of €59,645.
+Battery size ranges from 23.8kWh to 200kWh with an average battery size of 66.73kWh
+The battery range ranges from 165km to 970km
+Top speed ranges from 123km/h to 410km/h with an average top speed of 177.7km/h
+
+## Correlation
+```{r}
+ev_numeric <- ev[, -c(1,7,10 )] #Creating numeric data frame for correlation plots and removing price in UK
+pairs(PriceinGermany~., ev_numeric)
+```
+This scatter plot matrices shows the correlation that exists between variables. Starting from the top left, the variables
+move downward diagonally and is an axis label for the plots shown. With these scatterplots we can see that there is some correlation
+between PriceinGermany and top speed, range, fast charging speed and battery size. These plots might be a little difficult to read
+so lets do a different correlation plot.
+
+
+```{r}
+corrplot(cor(ev_numeric), method = "number")
+```
+This correlation plot is also a correlation matrix. We us the argument "method = number" to show the coefficients in a number 
+with different colors that describe their respective correlation. Confirming with what we saw in the scatterplot matrix, we can
+easily identify the correlation between PriceinGermany and top speed, range, fast charge speed and battery size. 
+
+
+
+## Distribution of EV Prices
+Taking a more in depth look in EV prices, we will graph the distribution of the prices as well as mark the median and mean
+```{r}
+ggplot(ev_numeric, aes(x = PriceinGermany)) +    
+  geom_histogram(alpha = 0.8,fill = "#fcb9c6") +
+  geom_vline(aes(xintercept = mean(PriceinGermany)),col='indianred1',size=1)+ #Vertical Line for Mean
+  geom_text(aes(x=mean(PriceinGermany) + 1250, label="Mean", y=10), colour="indianred1", angle=90) +
+  geom_vline(aes(xintercept = median(PriceinGermany)),col='steelblue1',size=1)+ #Vertical Line for Median
+  geom_text(aes(x=median(PriceinGermany) + 1250, label="Median", y=10), colour="steelblue1", angle=90) +
+  labs(x= 'Price',y = 'Count', title = paste("Distribution of EV Prices")) +
+  theme_bw()
+```
+Now we will look at the relationship price has with acceleration, top speed, range and efficiency
+```{r}
+v1 <- ggplot(ev_numeric, aes(x=Acceleration,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=Acceleration,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Acceleration', 
+       y = 'Price', 
+       title = 'Acceleration and Price')
+
+v2 <- ggplot(ev_numeric, aes(x=TopSpeed,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=TopSpeed,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Top Speed', 
+       y = 'Price', 
+       title = 'Top Speed and Price')
+
+
+v3 <- ggplot(ev_numeric, aes(x=Range,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=Range,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Range', 
+       y = 'Price', 
+       title = 'Range and Price')
+
+
+v4 <- ggplot(ev_numeric, aes(x=FastChargeSpeed,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=FastChargeSpeed,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Fast Charge Speed', 
+       y = 'Price', 
+       title = 'Fast Charge Speed and Price')
+
+patch = v1 + v2 + v3 + v4 + plot_layout(ncol=2, nrow=2) #patching all graphs in one frame
+patch
+```
+
+# Model Selection and Evaluation
+
+Let's fit our data into the simplest model and perform residual analysis
+
+```{r}
+model1 <- lm(PriceinGermany ~ ., data= ev_numeric)
+summary(model1)
+
+par(mfrow=c(2,2))
+plot(model1)
+
+```
+
+Our base model is highly significant with a good Adjusted R-squared of 0.7211. Every variable except Acceleration and FastChargeSpeed are significant. However, looking at the residual plots, we can see that there is a cosine pattern in the residuals. The normal qq plot also diverges away from the line. 
+
+## Leverage points
+
+From our Price distribution, we can observe that there are already outliers in our dataset. However, we'd like to see how it impacts our model and if those outliers are leverage points. To do this, we utilize the Outliers vs Leverage Plot.
+
+
+
+```{r}
+
+plot(model1, which = 5)
+
+```
+
+Let's investigate row 16, 52, and 122
+
+```{r}
+ev[c(16,52,122),]
+ev_numeric <- ev_numeric[-16,]
+```
+
+All Three Vehicles are premium vehicles with a higher price point and better performance than other vehicles. We do not want to remove data points unless necessary to avoid overfitting. However one vehicle stands out more than others which is 'Lightyear One'. It's price point is very high at 149000 EUD, however the stats do not follow the trend in our models. This is because Lightyear One is a concept Solar Vehicle. Thus, we will consider the vehicle to be a Leverage Point and remove the row.
+
+## Checking Multicollinearity 
+
+One of the assumptions of a linear regression model is that there is little to no Multicollinearity among the variables. This means Observations are independent of each other. Here we will fit all the variables into a linear regression model and analyze the results.
+
+From looking at the summary of the model, we can observe that 'FastChargeSpeed' coefficients have the wrong sign. From our plots, we see that Price increases as 'FastChargeSpeed' increases. From the pairs plots, we can also observe that there is an obvious linear relationship between TopSpeed, Acceleration and Fast Charge Speed.
+
+Thus, we will use a measure called VIF (Variance Inflation Factor) to further investigate
+
+```{r}
+vif(model1)
+
+```
+
+
+As a general rule of thumb, a VIF of 10 or greater is a cause for concern. We have three variables that have very concerning VIF scores.
+
+
+## Transformation
+
+It is imperative that we transform are variables so that we could produce a model that fits the assumptions of confidence intervals, normality and constant variance. We'll go ahead and use Power Transform to analyze the recommended transformations.
+
+```{r}
+summary(powerTransform(cbind(PriceinGermany, BatterySize, Acceleration, TopSpeed, Range, Efficiency, FastChargeSpeed, NumberofSeats) ~ 1, ev_numeric))
+
+p1 <- powerTransform(PriceinGermany ~   BatterySize + Acceleration + TopSpeed + Range + Efficiency + FastChargeSpeed + NumberofSeats, ev_numeric)
+
+```
+
+Strong evidence that $\lambda = 0$ for variable Battery Size, Range, Efficiency, and Fast Charged Speed so take the $log()$ of those variable to get closer to multivariate normality.
+
+```{r}
+# model2 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ log(BatterySize) + I(Acceleration^0.5) + I(TopSpeed^-1) + log(Range) + log(Efficiency) + log(FastChargeSpeed) + I(NumberofSeats^-1), ev_numeric)
+
+
+model2 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ BatterySize + Acceleration + TopSpeed + Range + Efficiency + FastChargeSpeed + NumberofSeats, ev_numeric)
+
+
+par(mfrow=c(2,2))
+plot(model2)
+vif(model2)
+```
+
+
+## Variable Selection
+
+We've talked about our dataset having multi-colinearity before. To tackle that problem we will try a few Variable Selection methods. We will be using sub-setting and analyzing the recommendations. While using the regsubsets() function, we will particularly focus on Adjusted R-squared, CP values and BIC, as we cannot use $R^2$ or RSS since higher variables will win everytime.
+
+```{r}
+library(leaps)
+best <- regsubsets(bcPower(PriceinGermany, p1$roundlam) ~ BatterySize + Acceleration + TopSpeed + Range + Efficiency + FastChargeSpeed + NumberofSeats, data = ev_numeric, nbest = 2, method = "exhaustive")
+
+with(summary(best), data.frame(adjr2,bic,cp,rss, outmat))
+
+
+
+
+```
+
+Based on our results the 4(1) row looks the best. Note: The higher R^2 the better. The lower CP, the better. The lower BIC the better. We'll fit and test out the data accordingly 
+
+
+```{r}
+model3 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ BatterySize + TopSpeed + Range + Efficiency, data = ev_numeric)
+
+summary(model3)
+
+par(mfrow=c(2,2))
+plot(model3)
+AIC(model3)
+vif(model3)
+
+```
+
+Let's do transformations again.
+
+```{r}
+
+summary(powerTransform(cbind(PriceinGermany, BatterySize, TopSpeed, Range, Efficiency) ~ 1, ev_numeric))
+
+
+model4 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ log(BatterySize) +  I(TopSpeed^-1) + log(Range) + log(Efficiency), ev_numeric)
+
+par(mfrow=c(2,2))
+summary(model4)
+plot(model4)
+
+```
+
+
+
+
+```{r}
+best2 <- regsubsets(bcPower(PriceinGermany, p1$roundlam) ~ log(BatterySize) + I(Acceleration^0.5) + I(TopSpeed^-1) + log(Range) + log(Efficiency) + log(FastChargeSpeed) + I(NumberofSeats^-1), data = ev_numeric, nbest = 2, method = "exhaustive")
+
+with(summary(best2), data.frame(adjr2,bic,cp,rss, outmat))
+
+model5 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ I(TopSpeed^-1) + log(Efficiency) + log(FastChargeSpeed), ev_numeric)
+
+
+summary(model5)
+par(mfrow=c(2,2))
+plot(model5)
+
+```
+
