@@ -60,7 +60,7 @@ ev$Efficiency <- as.numeric(gsub(" Wh/km", "", ev$Efficiency))
 ev$FastChargeSpeed <- as.numeric(gsub(" km/h", "", ev$FastChargeSpeed))
 ev$Drive <- as.factor(ev$Drive)
 ev$PriceinGermany <- as.numeric(ev$PriceinGermany)
-ev <- ev[,-2]
+ev <- ev[,-2] #removing subtitle column
 ```
 We then check for any missing values in our data set and remove them.
 ```{r}
@@ -103,15 +103,26 @@ Top speed ranges from 123km/h to 410km/h with an average top speed of 177.7km/h
 
 ## Correlation
 ```{r}
-ev_numeric <- ev[, -c(1,7)]
+ev_numeric <- ev[, -c(1,7,10 )] #Creating numeric data frame for correlation plots and removing price in UK
 pairs(PriceinGermany~., ev_numeric)
-
 ```
+This scatter plot matrices shows the correlation that exists between variables. Starting from the top left, the variables
+move downward diagonally and is an axis label for the plots shown. With these scatterplots we can see that there is some correlation
+between PriceinGermany and top speed, range, fast charging speed and battery size. These plots might be a little difficult to read
+so lets do a different correlation plot.
+
+
 ```{r}
 corrplot(cor(ev_numeric), method = "number")
 ```
+This correlation plot is also a correlation matrix. We us the argument "method = number" to show the coefficients in a number 
+with different colors that describe their respective correlation. Confirming with what we saw in the scatterplot matrix, we can
+easily identify the correlation between PriceinGermany and top speed, range, fast charge speed and battery size. 
+
+
 
 ## Distribution of EV Prices
+Taking a more in depth look in EV prices, we will graph the distribution of the prices as well as mark the median and mean
 ```{r}
 ggplot(ev_numeric, aes(x = PriceinGermany)) +    
   geom_histogram(alpha = 0.8,fill = "#fcb9c6") +
@@ -122,7 +133,7 @@ ggplot(ev_numeric, aes(x = PriceinGermany)) +
   labs(x= 'Price',y = 'Count', title = paste("Distribution of EV Prices")) +
   theme_bw()
 ```
-
+Now we will look at the relationship price has with acceleration, top speed, range and efficiency
 ```{r}
 v1 <- ggplot(ev_numeric, aes(x=Acceleration,y=PriceinGermany))+
   geom_point(color = "blue")+
