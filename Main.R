@@ -56,3 +56,20 @@ model4 <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
 model3_subsets <- regsubsets(x = PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
                              + log(Range) +log(Efficiency) + log(FastChargeSpeed)
                              + log(BatterySize), data = ev)
+
+# Tranform both predictors and response
+summary(powerTransform(cbind(ev$PriceinGermany, ev$Acceleration, ev$TopSpeed, ev$Range,
+                             ev$Efficiency, ev$FastChargeSpeed, ev$BatterySize)))
+
+# Create model with transformed predictors and response
+model5 <- lm(1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) + 
+                 log(Efficiency) + log(FastChargeSpeed) + log(BatterySize), data = ev)
+
+# Best Subset on Fully Transformed Data
+model5_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
+                             + log(Range) +log(Efficiency) + log(FastChargeSpeed)
+                             + log(BatterySize), data = ev)
+
+# Create subset model with transformed response
+model6 <- lm(1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+                 log(Efficiency) + log(BatterySize), data = ev)

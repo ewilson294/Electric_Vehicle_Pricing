@@ -3,8 +3,8 @@ title: "Electric Vehicle Pricing"
 author: "Eric Wilson; Min Thiha Myo; Kevin Maldonado"
 date: "12/7/2021"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 # Introduction
@@ -180,23 +180,25 @@ patch
 
 ## Data Transformation
 ```{r}
-# Transform numeric predictors
-summary(powerTransform(cbind(ev$Acceleration, ev$TopSpeed, ev$Range, ev$Efficiency,
+# Transform response and numeric predictors
+summary(powerTransform(cbind(ev$PriceinGermany, ev$Acceleration, ev$TopSpeed, ev$Range, ev$Efficiency,
                              ev$FastChargeSpeed, ev$BatterySize)))
 ```
 
 
 ```{r}
 # Create model with transformed Data
-transformed_model <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+transformed_model <- lm(1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
                  log(Efficiency) + log(FastChargeSpeed) + log(BatterySize), data = ev)
 summary(transformed_model)
 ```
 
+
+
 ## Feature Selection
 ```{r}
 # Perform Best Subset Selection on Transformed Data
-transformed_model_subsets <- regsubsets(x = PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
+transformed_model_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
                              + log(Range) +log(Efficiency) + log(FastChargeSpeed)
                              + log(BatterySize), data = ev)
 summary(transformed_model_subsets)
@@ -205,11 +207,11 @@ summary(transformed_model_subsets)
 ## Best Subset Model
 ```{r}
 # Create model with transformed Data, without FastChargeSpeed
-subset_model <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+subset_model <- lm(1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
                  log(Efficiency) + log(BatterySize), data = ev)
 summary(subset_model)
 plot(subset_model)
 ```
 
-All of our predictors and the model as a whole are statistically significant, however the model is still not valid for making predictions.
-Model variance remains non-constant.
+In this model, Normal Q-Q is close to linear, and variance is close to constant. We can reasonably make predictions with this model.
+An outlier is clearly seen with the Lightyear One car, which at the time of this project has not come to market but is priced at 149,000 Euros.
