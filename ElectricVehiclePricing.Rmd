@@ -134,7 +134,7 @@ ggplot(ev_numeric, aes(x = PriceinGermany)) +
   labs(x= 'Price',y = 'Count', title = paste("Distribution of EV Prices")) +
   theme_bw()
 ```
-Now we will look at the relationship price has with acceleration, top speed, range and efficiency
+Now we will look at the relationship price has with acceleration, top speed, range, battery size, fast charge speed and efficiency.
 ```{r}
 v1 <- ggplot(ev_numeric, aes(x=Acceleration,y=PriceinGermany))+
   geom_point(color = "blue")+
@@ -174,7 +174,25 @@ v4 <- ggplot(ev_numeric, aes(x=Efficiency,y=PriceinGermany))+
        y = 'Price', 
        title = 'Efficiency and Price')
 
-patch = v1 + v2 + v3 + v4 + plot_layout(ncol=2, nrow=2) #patching all graphs in one frame
+v5 <- ggplot(ev_numeric, aes(x=BatterySize,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=BatterySize,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Battery Size', 
+       y = 'Price', 
+       title = 'Battery and Price')
+
+v6 <- ggplot(ev_numeric, aes(x=FastChargeSpeed,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=FastChargeSpeed,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Fast Charge Speed', 
+       y = 'Price', 
+       title = 'Fast Charge and Price')
+
+patch = v1 + v2 + v3 + v4 + v5 + v6 + plot_layout(ncol=3, nrow=3) #patching all graphs in one frame
 patch
 ```
 ## Initial Model
