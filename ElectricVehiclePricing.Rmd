@@ -177,14 +177,28 @@ v4 <- ggplot(ev_numeric, aes(x=Efficiency,y=PriceinGermany))+
 patch = v1 + v2 + v3 + v4 + plot_layout(ncol=2, nrow=2) #patching all graphs in one frame
 patch
 ```
+## Initial Model
+
+Our initial model regresses the Price in Germany on the numerical predictors.
+
+```{r}
+initial_model <- lm(PriceinGermany ~ Acceleration + TopSpeed + Range + Efficiency
+                    + FastChargeSpeed + NumberofSeats + BatterySize, data = ev)
+summary(initial_model)
+plot(initial_model)
+```
+
+The initial model is not valid. Normal Q-Q is not close to a line, and the standardized residuals show changing variance.
 
 ## Data Transformation
+We address these issue by transforming our data. We run multivariagte Box-Cox transformation on our predictors and our response.
 ```{r}
 # Transform response and numeric predictors
 summary(powerTransform(cbind(PriceinGermany, Acceleration, TopSpeed, Range, Efficiency,
                              FastChargeSpeed, BatterySize) ~ 1, data = ev))
 ```
 
+We will choose $\lambda = -1$ for `PriceinGermany` and `TopSpeed`, $\lambda = .5$ for `Acceleration`, and $\lambda = 0$ for all other variables.
 
 ```{r}
 # Create model with transformed Data
@@ -193,25 +207,30 @@ transformed_model <- lm(1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed) + 
 summary(transformed_model)
 ```
 
-
+Not all of our predictors are statistically significant.
 
 ## Feature Selection
+We perform feature selection to address the insignificant variables.
 ```{r}
 # Perform Best Subset Selection on Transformed Data
 transformed_model_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed)
                              + log(Range) +log(Efficiency) + log(FastChargeSpeed)
-                             + log(BatterySize), data = ev)
-summary(transformed_model_subsets)
+                             + log(BatterySize) + log(NumberofSeats), data = ev)
+(transformed_model_subsets.summary <- summary(transformed_model_subsets))
+(best_number_variables <- list("AIC" = which.min(transformed_model_subsets.summary$cp), "BIC" = which.min(transformed_model_subsets.summary$bic),
+                              "R2adj" = which.max(transformed_model_subsets.summary$adjr2)))
 ```
+
+We choose to use the smallest model suggest by the Bayesian information criterion.
 
 ## Best Subset Model
 ```{r}
 # Create model with transformed Data, without FastChargeSpeed
-subset_model <- lm(1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) +
+subset_model <- lm(1/PriceinGermany ~ I(1/TopSpeed) + log(Range) + 
                  log(Efficiency) + log(BatterySize), data = ev)
 summary(subset_model)
 plot(subset_model)
 ```
 
-In this model, Normal Q-Q is close to linear, and variance is close to constant. We can reasonably make predictions with this model.
+In this model, Normal Q-Q is close to linear, and variance is reasonably constant. The model appears to be valid.
 An outlier is clearly seen with the Lightyear One car, which at the time of this project has not come to market but is priced at 149,000 Euros.
