@@ -53,7 +53,7 @@ model4 <- lm(PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
 # Note: Lightyear one seems to be a pretty bad strong outlier
 
 # Perform Best Subset Selection on Transformed Data
-model3_subsets <- regsubsets(x = PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
+model3_subsets <- regsubsets(x = PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed)
                              + log(Range) +log(Efficiency) + log(FastChargeSpeed)
                              + log(BatterySize), data = ev)
 
@@ -62,14 +62,36 @@ summary(powerTransform(cbind(ev$PriceinGermany, ev$Acceleration, ev$TopSpeed, ev
                              ev$Efficiency, ev$FastChargeSpeed, ev$BatterySize)))
 
 # Create model with transformed predictors and response
-model5 <- lm(1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) + 
+model5 <- lm(1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) + 
                  log(Efficiency) + log(FastChargeSpeed) + log(BatterySize), data = ev)
 
 # Best Subset on Fully Transformed Data
-model5_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed)
+model5_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed)
                              + log(Range) +log(Efficiency) + log(FastChargeSpeed)
                              + log(BatterySize), data = ev)
 
 # Create subset model with transformed response
-model6 <- lm(1/PriceinGermany ~ sqrt(Acceleration) + (1/TopSpeed) + log(Range) +
+model6 <- lm(1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) +
                  log(Efficiency) + log(BatterySize), data = ev)
+
+# Include NumberOfSeats in Analysis
+summary(powerTransform(cbind(PriceinGermany, Acceleration, TopSpeed, Range, Efficiency,
+                             FastChargeSpeed, NumberofSeats, BatterySize) ~ 1, 
+                       data = ev))
+
+model7 <- lm(1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) + 
+                 log(Efficiency) + log(FastChargeSpeed) + log(NumberofSeats) +
+                 log(BatterySize), data = ev)
+
+model7_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) + 
+                                 log(Efficiency) + log(FastChargeSpeed) + log(NumberofSeats) +
+                                 log(BatterySize), data = ev)
+(model7_subsets.summary <- summary(model7_subsets))
+(best_number_variables <- list("AIC" = which.min(model7_subsets.summary$cp), "BIC" = which.min(model7_subsets.summary$bic),
+                              "R2adj" = which.max(model7_subsets.summary$adjr2)))
+# Acceleration not recommended for use
+
+# Simplest Model based on Best Subset
+model8 <- lm(1/PriceinGermany ~ I(1/TopSpeed) + log(Range) + 
+                 log(Efficiency) + log(BatterySize), data = ev)
+summary(model8)
