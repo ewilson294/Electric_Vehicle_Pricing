@@ -50,7 +50,7 @@ ev <- read_xlsx('Electric Vehicle Data/Cheapestelectriccars-EVDatabase.xlsx',
 We now go into our data and start our clean up process. We start by converting several variables to numeric. Battery Size, PriceinUK, 
 Acceleration, Top Speed, Range, Efficiency, Fast charge speed, and Price in Germany all get converted to numeric. Along with this conversion,
 we perform some regex (regular expression) to our data so that we can perform a successful conversion to numeric. Our 'Drive' variable will 
-be converted to a factor. Note that since our data set comes from european sources the units will be in kilometers.
+be converted to a factor. Note that since our data set comes from European sources the units will be in kilometers.
 
 ```{r}
 # Convert Character Vectors into useable numeric vectors
