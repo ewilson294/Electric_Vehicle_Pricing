@@ -246,11 +246,20 @@ Our model is significant, but not all of the variables are.
 
 From looking at the summary of the model, we can observe that 'FastChargeSpeed' coefficients have the wrong sign. From our plots, we see that Price increases as 'FastChargeSpeed' increases. From the pairs plots, we can also observe that there is an obvious linear relationship between TopSpeed, Acceleration and Fast Charge Speed.
 
+Thus, we will use a measure called VIF (Variance Inflation Factor) to further investigate.
+
+```{r}
+vif(transformed_model)
+```
+
+VIF should be below 5. From our current VIF values, we must perform feature selection.
+
 ## Feature Selection
-We perform feature selection to address the insignificant variables.
+
+We perform feature selection to address the insignificant variables and high VIF.
 ```{r}
 # Perform Best Subset Selection on Transformed Data
-transformed_model_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed)
+transformed_model_subsets <- regsubsets(x = I(PriceinGermany^-.5) ~ sqrt(Acceleration) + I(1/TopSpeed)
                              + log(Range) +log(Efficiency) + log(FastChargeSpeed)
                              + log(BatterySize) + log(NumberofSeats), data = ev)
 (transformed_model_subsets.summary <- summary(transformed_model_subsets))
@@ -258,15 +267,16 @@ transformed_model_subsets <- regsubsets(x = 1/PriceinGermany ~ sqrt(Acceleration
                               "R2adj" = which.max(transformed_model_subsets.summary$adjr2)))
 ```
 
-We choose to use the smallest model suggest by the Bayesian information criterion.
+We choose to use the smallest model suggested by the Bayesian information criterion.
 
 ## Best Subset Model
 ```{r}
 # Create model with transformed Data, without FastChargeSpeed
-subset_model <- lm(1/PriceinGermany ~ I(1/TopSpeed) + log(Range) + 
-                 log(Efficiency) + log(BatterySize), data = ev)
+subset_model <- lm(PriceinGermany^-.5 ~ I(1/TopSpeed) + 
+                 log(Efficiency) + log(FastChargeSpeed), data = ev)
 summary(subset_model)
 plot(subset_model)
+vif(subset_model)
 ```
 
 In this model, Normal Q-Q is close to linear, and variance is reasonably constant. The model appears to be valid.
