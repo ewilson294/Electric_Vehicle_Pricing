@@ -104,6 +104,7 @@ Top speed ranges from 123km/h to 410km/h with an average top speed of 177.7km/h
 
 ## Correlation
 ```{r}
+detach(ev)
 ev_numeric <- ev[, -c(1,7,10 )] #Creating numeric data frame for correlation plots and removing price in UK
 pairs(PriceinGermany~., ev_numeric)
 ```
@@ -209,7 +210,7 @@ plot(initial_model)
 The initial model is not valid. Normal Q-Q is not close to a line, and the standardized residuals show changing variance.
 
 ## Data Transformation
-We address these issue by transforming our data. We run multivariagte Box-Cox transformation on our predictors and our response.
+We address these issue by transforming our data. We run multivariate Box-Cox transformation on our predictors and our response.
 ```{r}
 # Transform response and numeric predictors
 summary(powerTransform(cbind(PriceinGermany, Acceleration, TopSpeed, Range, Efficiency,
