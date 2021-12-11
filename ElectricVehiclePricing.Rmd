@@ -3,8 +3,8 @@ title: "Electric Vehicle Pricing"
 author: "Eric Wilson; Min Thiha Myo; Kevin Maldonado"
 date: "12/7/2021"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 # Introduction
@@ -35,9 +35,11 @@ library(leaps)
 # Data Preparation
 
 ## Data Source
+
 Our data can be found through this link: https://www.kaggle.com/kkhandekar/cheapest-electric-cars
 
 ##Loading Dataset
+
 Our EV dataset contains 180 observations (rows) and 12 variables (columns). 
 ```{r}
 ev <- read_xlsx('Electric Vehicle Data/Cheapestelectriccars-EVDatabase.xlsx', 
@@ -51,8 +53,10 @@ we perform some regex (regular expression) to our data so that we can perform a 
 be converted to a factor. Note that since our data set comes from european sources the units will be in kilometers.
 ```{r}
 # Convert Character Vectors into useable numeric vectors
-ev$BatterySize <- as.numeric(gsub(".* ([0-9]{2,3}[.]*[0-9]*) kWh", "\\1", ev$Subtitle))
-libra_strip <- gsub(".([0-9]{2,3},[0-9]{3})", "\\1", ev$PriceinUK) # strip the libra symbol
+ev$BatterySize <- as.numeric(gsub(".* ([0-9]{2,3}[.]*[0-9]*) kWh", "\\1",
+                                  ev$Subtitle))
+libra_strip <- gsub(".([0-9]{2,3},[0-9]{3})", "\\1", 
+                    ev$PriceinUK) # strip the libra symbol
 ev$PriceinUK <- as.numeric(gsub(",", "", libra_strip))
 ev$Acceleration <- as.numeric(gsub(" sec", "", ev$Acceleration))
 ev$TopSpeed <- as.numeric(gsub(" km/h", "", ev$TopSpeed))
@@ -106,7 +110,8 @@ Top speed ranges from 123km/h to 410km/h with an average top speed of 177.7km/h.
 
 ```{r}
 detach(ev)
-ev_numeric <- ev[, -c(1,7,10 )] #Creating numeric data frame for correlation plots and removing price in UK
+#Creating numeric data frame for correlation plots and removing price in UK
+ev_numeric <- ev[, -c(1,7,10 )]
 pairs(PriceinGermany~., ev_numeric)
 ```
 
@@ -130,10 +135,14 @@ Taking a more in depth look in EV prices, we will graph the distribution of the 
 ```{r}
 ggplot(ev_numeric, aes(x = PriceinGermany)) +    
   geom_histogram(alpha = 0.8,fill = "#fcb9c6") +
-  geom_vline(aes(xintercept = mean(PriceinGermany)),col='indianred1',size=1)+ #Vertical Line for Mean
-  geom_text(aes(x=mean(PriceinGermany) + 1250, label="Mean", y=10), colour="indianred1", angle=90) +
-  geom_vline(aes(xintercept = median(PriceinGermany)),col='steelblue1',size=1)+ #Vertical Line for Median
-  geom_text(aes(x=median(PriceinGermany) + 1250, label="Median", y=10), colour="steelblue1", angle=90) +
+  geom_vline(aes(xintercept = mean(PriceinGermany)),col='indianred1',
+             size=1)+ #Vertical Line for Mean
+  geom_text(aes(x=mean(PriceinGermany) + 1250, label="Mean", y=10), 
+            colour="indianred1", angle=90) +
+  geom_vline(aes(xintercept = median(PriceinGermany)),col='steelblue1',
+             size=1)+ #Vertical Line for Median
+  geom_text(aes(x=median(PriceinGermany) + 1250, label="Median", y=10), 
+            colour="steelblue1", angle=90) +
   labs(x= 'Price',y = 'Count', title = paste("Distribution of EV Prices")) +
   theme_bw()
 ```
@@ -144,7 +153,8 @@ Our data is to the right. Now we will look at the relationship price has with ac
 v1 <- ggplot(ev_numeric, aes(x=Acceleration,y=PriceinGermany))+
   geom_point(color = "blue")+
   
-  stat_smooth(aes(x=Acceleration,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  stat_smooth(aes(x=Acceleration,y=PriceinGermany),method="lm", 
+              color="red")+ #code for trend line
   theme_bw()+
   labs(x = 'Acceleration', 
        y = 'Price', 
@@ -153,7 +163,8 @@ v1 <- ggplot(ev_numeric, aes(x=Acceleration,y=PriceinGermany))+
 v2 <- ggplot(ev_numeric, aes(x=TopSpeed,y=PriceinGermany))+
   geom_point(color = "blue")+
   
-  stat_smooth(aes(x=TopSpeed,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  stat_smooth(aes(x=TopSpeed,y=PriceinGermany),method="lm", 
+              color="red")+ #code for trend line
   theme_bw()+
   labs(x = 'Top Speed', 
        y = 'Price', 
@@ -163,7 +174,8 @@ v2 <- ggplot(ev_numeric, aes(x=TopSpeed,y=PriceinGermany))+
 v3 <- ggplot(ev_numeric, aes(x=Range,y=PriceinGermany))+
   geom_point(color = "blue")+
   
-  stat_smooth(aes(x=Range,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  stat_smooth(aes(x=Range,y=PriceinGermany),method="lm", 
+              color="red")+ #code for trend line
   theme_bw()+
   labs(x = 'Range', 
        y = 'Price', 
@@ -173,7 +185,8 @@ v3 <- ggplot(ev_numeric, aes(x=Range,y=PriceinGermany))+
 v4 <- ggplot(ev_numeric, aes(x=Efficiency,y=PriceinGermany))+
   geom_point(color = "blue")+
   
-  stat_smooth(aes(x=Efficiency,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  stat_smooth(aes(x=Efficiency,y=PriceinGermany),method="lm", 
+              color="red")+ #code for trend line
   theme_bw()+
   labs(x = 'Efficiency', 
        y = 'Price', 
@@ -182,7 +195,8 @@ v4 <- ggplot(ev_numeric, aes(x=Efficiency,y=PriceinGermany))+
 v5 <- ggplot(ev_numeric, aes(x=BatterySize,y=PriceinGermany))+
   geom_point(color = "blue")+
   
-  stat_smooth(aes(x=BatterySize,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  stat_smooth(aes(x=BatterySize,y=PriceinGermany),method="lm", 
+              color="red")+ #code for trend line
   theme_bw()+
   labs(x = 'Battery Size', 
        y = 'Price', 
@@ -191,13 +205,15 @@ v5 <- ggplot(ev_numeric, aes(x=BatterySize,y=PriceinGermany))+
 v6 <- ggplot(ev_numeric, aes(x=FastChargeSpeed,y=PriceinGermany))+
   geom_point(color = "blue")+
   
-  stat_smooth(aes(x=FastChargeSpeed,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  stat_smooth(aes(x=FastChargeSpeed,y=PriceinGermany),method="lm", 
+              color="red")+ #code for trend line
   theme_bw()+
   labs(x = 'Fast Charge Speed', 
        y = 'Price', 
        title = 'Fast Charge and Price')
 
-patch = v1 + v2 + v3 + v4 + v5 + v6 + plot_layout(ncol=3, nrow=3) #patching all graphs in one frame
+patch = v1 + v2 + v3 + v4 + v5 + v6 + plot_layout(ncol=3, 
+                                                  nrow=3) #patching all graphs in one frame
 patch
 ```
 
@@ -235,16 +251,18 @@ We address the other datapoints by transforming our data. We run multivariate Bo
 
 ```{r}
 # Transform response and numeric predictors
-summary(powerTransform(cbind(PriceinGermany, Acceleration, TopSpeed, Range, Efficiency,
-                             FastChargeSpeed, NumberofSeats, BatterySize) ~ 1, data = ev))
+summary(powerTransform(cbind(PriceinGermany, Acceleration, TopSpeed, Range, 
+                             Efficiency, FastChargeSpeed, NumberofSeats, 
+                             BatterySize) ~ 1, data = ev))
 ```
 
 We will choose $\lambda = -0.5$ for `PriceinGermany`, $\lambda = 1$ for `TopSpeed`, $\lambda = .5$ for `Acceleration`, and $\lambda = 0$ for all other variables.
 
 ```{r}
 # Create model with transformed Data
-transformed_model <- lm(I(PriceinGermany^-.5) ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) +
-                 log(Efficiency) + log(FastChargeSpeed) + log(BatterySize), data = ev)
+transformed_model <- lm(I(PriceinGermany^-.5) ~ sqrt(Acceleration) + 
+                          I(1/TopSpeed) + log(Range) + log(Efficiency) + 
+                          log(FastChargeSpeed) + log(BatterySize), data = ev)
 summary(transformed_model)
 ```
 
@@ -268,12 +286,17 @@ We perform feature selection to address the insignificant variables and high VIF
 
 ```{r}
 # Perform Best Subset Selection on Transformed Data
-transformed_model_subsets <- regsubsets(x = I(PriceinGermany^-.5) ~ sqrt(Acceleration) + I(1/TopSpeed)
-                             + log(Range) +log(Efficiency) + log(FastChargeSpeed)
-                             + log(BatterySize) + log(NumberofSeats), data = ev)
+transformed_model_subsets <- regsubsets(x = I(PriceinGermany^-.5) ~ 
+                                          sqrt(Acceleration) + I(1/TopSpeed) + 
+                                          log(Range) +log(Efficiency) + 
+                                          log(FastChargeSpeed) + 
+                                          log(BatterySize) + log(NumberofSeats),
+                                        data = ev)
 (transformed_model_subsets.summary <- summary(transformed_model_subsets))
-(best_number_variables <- list("AIC" = which.min(transformed_model_subsets.summary$cp), "BIC" = which.min(transformed_model_subsets.summary$bic),
-                              "R2adj" = which.max(transformed_model_subsets.summary$adjr2)))
+(best_number_variables <- list("AIC" = 
+                                 which.min(transformed_model_subsets.summary$cp), 
+                               "BIC" = which.min(transformed_model_subsets.summary$bic),
+                               "R2adj" = which.max(transformed_model_subsets.summary$adjr2)))
 ```
 
 We choose to use the smallest model suggested by the Bayesian information criterion.
@@ -300,9 +323,10 @@ The final model that we have developed is:
 $PriceinGermany(in Euros) = [.0210 + .423 *(1/TopSpeed) - 3.20 * 10^{-3} * log(Efficiency) - 3.66 * 10^{-4} * log(FastChargeSpeed)]^{-2}$
 
 The steps we have taken are as follows:
-- Remove Bad Leverage Points
-- Transform our Variables with Box-Cox Transformation
-- Perform Best Subset Feature Selection
+
+* Remove Bad Leverage Points
+* Transform our Variables with Box-Cox Transformation
+* Perform Best Subset Feature Selection
 
 After using those 3 techniques, our model satisfies the assumptions of a linear regression model with decent model metrics.
 
