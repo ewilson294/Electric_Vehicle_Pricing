@@ -22,7 +22,7 @@ Our project will take data from various electric vehicles that are available in 
 to predict the price of electric vehicles based on different variables such as battery size, acceleration, range and efficiency. 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 library(tidyverse)
 library(readxl)
 library(MASS)
@@ -100,11 +100,6 @@ summary(TopSpeed)
 summary(Range)
 ```
 
-```{r}
-#summary of FastChargeSpeed
-summary(ev[,c(2,3,4,5,6,11)])
-```
-
 The electric vehicles in our data set range in price from €20,490 to €215,000 with an average price of €59,645.
 Battery size ranges from 23.8kWh to 200kWh with an average battery size of 66.73kWh
 The battery range ranges from 165km to 970km
@@ -143,7 +138,7 @@ ggplot(ev_numeric, aes(x = PriceinGermany)) +
   theme_bw()
 ```
 Now we will look at the relationship price has with acceleration, top speed, range and efficiency
-```{r}
+```{r, echo= FALSE}
 v1 <- ggplot(ev_numeric, aes(x=Acceleration,y=PriceinGermany))+
   geom_point(color = "blue")+
   
@@ -182,7 +177,25 @@ v4 <- ggplot(ev_numeric, aes(x=FastChargeSpeed,y=PriceinGermany))+
        y = 'Price', 
        title = 'Fast Charge Speed and Price')
 
-patch = v1 + v2 + v3 + v4 + plot_layout(ncol=2, nrow=2) #patching all graphs in one frame
+v5 <- ggplot(ev_numeric, aes(x=BatterySize,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=BatterySize,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Battery Size', 
+       y = 'Price', 
+       title = 'Battery and Price')
+
+v6 <- ggplot(ev_numeric, aes(x=FastChargeSpeed,y=PriceinGermany))+
+  geom_point(color = "blue")+
+  
+  stat_smooth(aes(x=FastChargeSpeed,y=PriceinGermany),method="lm", color="red")+ #code for trend line
+  theme_bw()+
+  labs(x = 'Fast Charge Speed', 
+       y = 'Price', 
+       title = 'Fast Charge and Price')
+
+patch = v1 + v2 + v3 + v4 + v5 + v6 + plot_layout(ncol=3, nrow=3) #patching all graphs in one frame
 patch
 ```
 
@@ -253,18 +266,11 @@ p1 <- powerTransform(PriceinGermany ~   BatterySize + Acceleration + TopSpeed + 
 Strong evidence that $\lambda = 0$ for variable Battery Size, Range, Efficiency, and Fast Charged Speed so take the $log()$ of those variable to get closer to multivariate normality.
 
 ```{r}
-# model2 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ log(BatterySize) + I(Acceleration^0.5) + I(TopSpeed^-1) + log(Range) + log(Efficiency) + log(FastChargeSpeed) + I(NumberofSeats^-1), ev_numeric)
-
-
-model2 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ BatterySize + Acceleration + TopSpeed + Range + Efficiency + FastChargeSpeed + NumberofSeats, ev_numeric)
-
-summary(model2)
+model2 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ log(BatterySize) + I(Acceleration^0.5) + I(TopSpeed^-1) + log(Range) + log(Efficiency) + log(FastChargeSpeed) + I(NumberofSeats^-1), ev_numeric)
 
 par(mfrow=c(2,2))
 plot(model2)
-vif(model2)
-AIC(model2)
-BIC(model2)
+
 
 ```
 
@@ -275,86 +281,57 @@ We've talked about our dataset having multi-colinearity before. To tackle that p
 
 ```{r}
 library(leaps)
-best <- regsubsets(bcPower(PriceinGermany, p1$roundlam) ~ BatterySize + Acceleration + TopSpeed + Range + Efficiency + FastChargeSpeed + NumberofSeats, data = ev_numeric, nbest = 2, method = "backward")
 
-with(summary(best), data.frame(adjr2,bic,cp,rss, outmat))
-
-
-
-
-```
-
-Based on our results the 4(1) row looks the best. Note: The higher R^2 the better. The lower CP, the better. The lower BIC the better. We'll fit and test out the data accordingly 
-
-
-```{r}
-model3 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ BatterySize + TopSpeed + Range + Efficiency, data = ev_numeric)
-
-# model3 <- lm(bcPower(PriceinGermany, p1$roundlam) ~  log(TopSpeed) + I(Efficiency^-1), data = ev_numeric)
-# 
-# summary(powerTransform(cbind(PriceinGermany, TopSpeed, Efficiency) ~ 1, ev_numeric))
-
-summary(model3)
-
-par(mfrow=c(2,2))
-plot(model3)
-AIC(model3)
-vif(model3)
-
-```
-
-Let's do transformations again.
-
-```{r}
-
-summary(powerTransform(cbind(PriceinGermany, BatterySize, TopSpeed, Range, Efficiency) ~ 1, ev_numeric))
-
-
-model4 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ log(BatterySize) +  I(TopSpeed^-1) + log(Range) + log(Efficiency), ev_numeric)
-
-par(mfrow=c(2,2))
-summary(model4)
-plot(model4)
-vif(model4)
-
-```
-
-
-
-
-```{r}
 best2 <- regsubsets(bcPower(PriceinGermany, p1$roundlam) ~ log(BatterySize) + I(Acceleration^0.5) + I(TopSpeed^-1) + log(Range) + log(Efficiency) + log(FastChargeSpeed) + I(NumberofSeats^-1), data = ev_numeric, nbest = 2, method = "exhaustive")
 
 with(summary(best2), data.frame(adjr2,bic,cp,rss, outmat))
 
-model5 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ I(TopSpeed^-1) + log(Efficiency) + log(FastChargeSpeed), ev_numeric)
-
-
-summary(model5)
-par(mfrow=c(2,2))
-plot(model5)
-AIC(model5)
-vif(model5)
-
-log(Efficiency)
-
 
 
 ```
 
-mode
+Based on our results the 3(1) row looks the best. Note: The higher R^2 the better. The lower CP, the better. The lower BIC the better. We'll fit and test out the data accordingly 
+
 
 ```{r}
-a$PriceinGermany <- bcPower(ev_numeric$PriceinGermany, p1$roundlam)
-a$TopSpeed <- TopSpeed^-1
-a$Efficiency <- log(Efficiency)
-a$FastChargeSpeed <- log(FastChargeSpeed)
 
 
+model5 <- lm(bcPower(PriceinGermany, p1$roundlam) ~ I(TopSpeed^-1) + log(Efficiency) + log(FastChargeSpeed), ev_numeric)
 
+par(mfrow=c(2,2))
+plot(model5)
 
 
 ```
+
+Our model looks very well. The residuals look to have a constant variance. The model follows normallity in our Normal QQ plot. From the Residual vs Leverage Point, we can see that there are no more bad leverage points. Our R squared value is 0.783. Our BIC value is -231.38. Our  CP value is 89.41.	Let's do some ANOVA testing and check our VIF again.
+
+```{r}
+
+AIC(model5)
+vif(model5)
+anova(model2,model5)
+
+```
+
+From our ANOVA test, the p-value is not significant which infers that there is no difference between the model before transformation and after transformation.
+
+
+## Model Validation
+
+Let's split our data into Training and Testing Sets by using the caret library. We'll train the model again using K-fold Cross Validation and predict the test dataset. We will then plot the actual values and predicted values and get our post-prediction Metrics.
+
+
+```{r, echo = FALSE}
+a <- data.frame(PriceinGermany = rep(1,163))
+a$PriceinGermany <- ev_numeric$PriceinGermany^-0.5
+a$TopSpeed <- ev_numeric$TopSpeed^-1
+a$Efficiency <- log(ev_numeric$Efficiency)
+a$FastChargeSpeed <- log(ev_numeric$FastChargeSpeed)
+
+```
+
+
 
 ```{r}
 
@@ -375,17 +352,20 @@ lrmodel = train(formula, data = train,
 
 ```
 
+```{r, echo=FALSE}
 
+prediction <- test
+prediction$pred <- predict(lrmodel, test)
+prediction$pred <- prediction$pred^-2
+prediction$PriceinGermany <- prediction$PriceinGermany^-2
+
+
+```
 
 
 ```{r}
-prediction <- test
 
-prediction$pred <- predict(lrmodel, test)
 
-comparison <- prediction %>% dplyr::select(PriceinGermany, pred)
-
-cor(prediction$pred, prediction$Price)
 
 ggplot(prediction, aes(x=pred,y=PriceinGermany))+
   geom_point(color = "blue")+
@@ -396,18 +376,39 @@ ggplot(prediction, aes(x=pred,y=PriceinGermany))+
   xlab("Predicted Price")+
   ylab("Actual Price")
 
+```
 
-data.frame(
-  R2 = R2(prediction$pred , prediction$PriceinGermany),
-  RMSE = RMSE(prediction$pred , prediction$PriceinGermany),
-  MAE = MAE(prediction$pred , prediction$PriceinGermany),
-  
-)
+```{r, echo=FALSE}
 
-# Dividing the RSE by the average value of the outcome variable will give you the prediction error rate, which should be as small as possible:
+paste0("Our prediction R2 score : ", R2(prediction$pred , prediction$PriceinGermany))
+paste0("Our prediction RMSE score : ", RMSE(prediction$pred , prediction$PriceinGermany))
+paste0("Our prediction R2 score : ", MAE(prediction$pred , prediction$PriceinGermany))
+paste0("Our prediction Error score : ", sigma(model5)/mean(prediction$PriceinGermany^-0.5))
 
-# MAE is a very simple metric which calculates the absolute difference between actual and predicted values.
-
-sigma(model5)/mean(prediction$PriceinGermany)
 
 ```
+
+## Conclusion:
+
+The purpose of this project is to build a suitable model that will accurately predict the Price of Electronic cars, as well as see the variable importance among the variables. 
+
+The final model that we have developed is:
+
+The steps we have taken are as follows:
+*Remove Leverage Points
+*Transform our Variables
+* Perform variable Selection
+
+After using those 3 techniques, Our model satisfies the assumptions of a linear regression model with decent model metrics.
+
+1. Our model follows linearity.
+2. Our predictor variables are independent of each other.
+3. Our model follows Homoscedasticity and the variance of residuals are constant.
+4. Our models is normally distributed.
+
+Therefore, we can utilize this models for different purposes: if you are an electronic car manufacturer, you can set a good price point for your vehicle compared to the rest of the industry. And if you're a consumer, you can use our model to see a good price point for the stats that you'd wish.
+
+## Limitation and Future Improvements
+
+The biggest limitation that we have is that we do not have an accurate and detailed classification of the electric vehicles. Our datasets contains concept vehicles as well as those in production and those that are outdated. There is also a variable in the vehicle class: the dataset contains both trucks, sport cars, and sedans. There is also the topic of luxury: some vehicles are priced more than the other due to their interior furnishings instead of the variables themselves. 
+
