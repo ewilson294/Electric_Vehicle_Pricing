@@ -94,20 +94,22 @@ summary(TopSpeed)
 ```
 
 ```{r}
-#summary of Battery Range
+#summary of Vehicle Range
 summary(Range)
 ```
 The electric vehicles in our data set range in price from €20,490 to €215,000 with an average price of €59,645.
-Battery size ranges from 23.8kWh to 200kWh with an average battery size of 66.73kWh
-The battery range ranges from 165km to 970km
-Top speed ranges from 123km/h to 410km/h with an average top speed of 177.7km/h
+Battery size ranges from 23.8kWh to 200kWh with an average battery size of 66.73kWh.
+Vehicle ranges span from 165km to 970km, with a mean of 344.1km/h
+Top speed ranges from 123km/h to 410km/h with an average top speed of 177.7km/h.
 
 ## Correlation
+
 ```{r}
 detach(ev)
 ev_numeric <- ev[, -c(1,7,10 )] #Creating numeric data frame for correlation plots and removing price in UK
 pairs(PriceinGermany~., ev_numeric)
 ```
+
 This scatter plot matrices shows the correlation that exists between variables. Starting from the top left, the variables
 move downward diagonally and is an axis label for the plots shown. With these scatterplots we can see that there is some correlation
 between PriceinGermany and top speed, range, fast charging speed and battery size. These plots might be a little difficult to read
@@ -117,14 +119,14 @@ so lets do a different correlation plot.
 ```{r}
 corrplot(cor(ev_numeric), method = "number")
 ```
+
 This correlation plot is also a correlation matrix. We us the argument "method = number" to show the coefficients in a number 
 with different colors that describe their respective correlation. Confirming with what we saw in the scatterplot matrix, we can
 easily identify the correlation between PriceinGermany and top speed, range, fast charge speed and battery size. 
 
-
-
 ## Distribution of EV Prices
-Taking a more in depth look in EV prices, we will graph the distribution of the prices as well as mark the median and mean
+
+Taking a more in depth look in EV prices, we will graph the distribution of the prices as well as mark the median and mean.
 ```{r}
 ggplot(ev_numeric, aes(x = PriceinGermany)) +    
   geom_histogram(alpha = 0.8,fill = "#fcb9c6") +
@@ -135,7 +137,9 @@ ggplot(ev_numeric, aes(x = PriceinGermany)) +
   labs(x= 'Price',y = 'Count', title = paste("Distribution of EV Prices")) +
   theme_bw()
 ```
-Now we will look at the relationship price has with acceleration, top speed, range, battery size, fast charge speed and efficiency.
+
+Our data is to the right. Now we will look at the relationship price has with acceleration, top speed, range, battery size, fast charge speed and efficiency.
+
 ```{r}
 v1 <- ggplot(ev_numeric, aes(x=Acceleration,y=PriceinGermany))+
   geom_point(color = "blue")+
@@ -196,6 +200,7 @@ v6 <- ggplot(ev_numeric, aes(x=FastChargeSpeed,y=PriceinGermany))+
 patch = v1 + v2 + v3 + v4 + v5 + v6 + plot_layout(ncol=3, nrow=3) #patching all graphs in one frame
 patch
 ```
+
 ## Initial Model
 
 Our initial model regresses the Price in Germany on the numerical predictors.
@@ -204,6 +209,7 @@ Our initial model regresses the Price in Germany on the numerical predictors.
 initial_model <- lm(PriceinGermany ~ Acceleration + TopSpeed + Range + Efficiency
                     + FastChargeSpeed + NumberofSeats + BatterySize, data = ev)
 summary(initial_model)
+par(mfrow = c(2,2))
 plot(initial_model)
 ```
 
@@ -212,6 +218,7 @@ The initial model is highly significant, but not valid. Normal Q-Q diverges from
 ## Leverage Points and Outliers
 
 We see three points of very high leverage, two of which have a Cook's distance above one. In addition, we see three outliers, with standardized residuals beyond 4. We view some of these below.
+
 ```{r}
 ev[c(16,52,122),]
 ```
@@ -223,6 +230,7 @@ ev <- ev[-16,]
 ```
 
 ## Data Transformation
+
 We address the other datapoints by transforming our data. We run multivariate Box-Cox transformation on our predictors and our response.
 
 ```{r}
@@ -257,6 +265,7 @@ VIF should be below 5. From our current VIF values, we must perform feature sele
 ## Feature Selection
 
 We perform feature selection to address the insignificant variables and high VIF.
+
 ```{r}
 # Perform Best Subset Selection on Transformed Data
 transformed_model_subsets <- regsubsets(x = I(PriceinGermany^-.5) ~ sqrt(Acceleration) + I(1/TopSpeed)
@@ -275,9 +284,35 @@ We choose to use the smallest model suggested by the Bayesian information criter
 subset_model <- lm(PriceinGermany^-.5 ~ I(1/TopSpeed) + 
                  log(Efficiency) + log(FastChargeSpeed), data = ev)
 summary(subset_model)
+par(mfrow = c(2,2))
 plot(subset_model)
 vif(subset_model)
 ```
 
-In this model, Normal Q-Q is close to linear, and variance is reasonably constant. The model appears to be valid.
-An outlier is clearly seen with the Lightyear One car, which at the time of this project has not come to market but is priced at 149,000 Euros.
+Both the model and all predictors are statistically significant. VIF values are all below 5, and the standardized residuals have a reasonably constant variance. This model appears valid.
+
+## Conclusion:
+
+The purpose of this project is to build a suitable model that will accurately predict the Price of Electronic cars, as well as see the variable importance among the variables. 
+
+The final model that we have developed is:
+
+$PriceinGermany(in Euros) = [.0210 + .423 *(1/TopSpeed) - 3.20 * 10^{-3} * log(Efficiency) - 3.66 * 10^{-4} * log(FastChargeSpeed)]^{-2}$
+
+The steps we have taken are as follows:
+- Remove Bad Leverage Points
+- Transform our Variables with Box-Cox Transformation
+- Perform Best Subset Feature Selection
+
+After using those 3 techniques, our model satisfies the assumptions of a linear regression model with decent model metrics.
+
+1. Our model follows linearity.
+2. Our predictor variables are independent of each other.
+3. Our model follows Homoscedasticity.
+4. Our model residuals are normally distributed.
+
+Therefore, we can utilize these models for different purposes: if you are an electric vehicle manufacturer, you can set a good price point for your vehicle compared to the rest of the industry. And if you are a consumer, you can use our model to estimate a good price point for the features that you seek.
+
+## Limitation and Future Improvements
+
+The biggest limitation that we have is that we do not have an accurate and detailed classification of the electric vehicles. Our dataset contains concept vehicles as well as those in production and those that are outdated. There is also a variable in the vehicle class: the dataset contains both trucks, sport cars, and sedans. There is also the topic of luxury: some vehicles are priced more than the other due to their amenities  rather than their highway statistics. 
