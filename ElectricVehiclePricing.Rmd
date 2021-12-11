@@ -207,26 +207,44 @@ summary(initial_model)
 plot(initial_model)
 ```
 
-The initial model is not valid. Normal Q-Q is not close to a line, and the standardized residuals show changing variance.
+The initial model is highly significant, but not valid. Normal Q-Q diverges from a line, and the standardized residuals show changing variance. 
+
+## Leverage Points and Outliers
+
+We see three points of very high leverage, two of which have a Cook's distance above one. In addition, we see three outliers, with standardized residuals beyond 4. We view some of these below.
+```{r}
+ev[c(16,52,122),]
+```
+
+The Lightyear One car stands out more than other vehicles, as being the only data point that has both very high leverage and is also an outlier. We shall consider this vehicle, which is solar-powered car that has not yet hit the market, to be a bad leverage point and shall remove it from our dataset.
+
+```{r}
+ev <- ev[-16,]
+```
 
 ## Data Transformation
-We address these issue by transforming our data. We run multivariate Box-Cox transformation on our predictors and our response.
+We address the other datapoints by transforming our data. We run multivariate Box-Cox transformation on our predictors and our response.
+
 ```{r}
 # Transform response and numeric predictors
 summary(powerTransform(cbind(PriceinGermany, Acceleration, TopSpeed, Range, Efficiency,
-                             FastChargeSpeed, BatterySize) ~ 1, data = ev))
+                             FastChargeSpeed, NumberofSeats, BatterySize) ~ 1, data = ev))
 ```
 
-We will choose $\lambda = -1$ for `PriceinGermany` and `TopSpeed`, $\lambda = .5$ for `Acceleration`, and $\lambda = 0$ for all other variables.
+We will choose $\lambda = -0.5$ for `PriceinGermany`, $\lambda = 1$ for `TopSpeed`, $\lambda = .5$ for `Acceleration`, and $\lambda = 0$ for all other variables.
 
 ```{r}
 # Create model with transformed Data
-transformed_model <- lm(1/PriceinGermany ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) +
+transformed_model <- lm(I(PriceinGermany^-.5) ~ sqrt(Acceleration) + I(1/TopSpeed) + log(Range) +
                  log(Efficiency) + log(FastChargeSpeed) + log(BatterySize), data = ev)
 summary(transformed_model)
 ```
 
-Not all of our predictors are statistically significant.
+Our model is significant, but not all of the variables are.
+
+## Checking Multicollinearity 
+
+From looking at the summary of the model, we can observe that 'FastChargeSpeed' coefficients have the wrong sign. From our plots, we see that Price increases as 'FastChargeSpeed' increases. From the pairs plots, we can also observe that there is an obvious linear relationship between TopSpeed, Acceleration and Fast Charge Speed.
 
 ## Feature Selection
 We perform feature selection to address the insignificant variables.
