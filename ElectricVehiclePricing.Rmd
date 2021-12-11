@@ -119,13 +119,13 @@ The electric vehicles in our data set range in price from €20,490 to €215,00
 
 Battery size ranges from 23.8kWh to 200kWh with an average battery size of 66.73kWh.
 
-Vehicle ranges span from 165km to 970km, with a mean of 344.1km
+Vehicle ranges span from 165km to 970km, with a mean of 344.1km.
 
 Top speed ranges from 123km/h to 410km/h with an average top speed of 177.7km/h.
 
 Efficiency ranges from 104Wh/km to 281Wh/km with a mean of 195.3Wh/km.
 
-Fast charge speed ranges from 120km/h to 1410km/h with a mean 486.6km/h
+Fast charge speed ranges from 120km/h to 1410km/h with a mean 486.6km/h.
 
 
 ## Correlation
